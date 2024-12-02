@@ -1,5 +1,8 @@
 package whitewise.keycloakdemo.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -7,7 +10,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class HomeController {
 
 	@GetMapping("/")
-	public String home() {
-		return "Hello World";
+	public String index(@AuthenticationPrincipal Jwt jwt) {
+		return String.format("Hello, %s!", jwt.getClaimAsString("preferred_username"));
+	}
+
+	@GetMapping("/protected/premium")
+	@PreAuthorize("hasAnyRole('ADMIN')")
+	public String premium(@AuthenticationPrincipal Jwt jwt) {
+		return String.format("Hello, %s!", jwt.getClaimAsString("preferred_username"));
 	}
 }

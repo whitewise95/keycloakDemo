@@ -23,8 +23,14 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     implementation 'org.projectlombok:lombok:1.18.30'
 
-    //keycloak
-    implementation 'org.keycloak:keycloak-spring-boot-starter:21.1.2'
+    //security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    //oauth
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+
+    implementation 'org.keycloak:keycloak-spring-boot-starter:24.0.5'
+
 }
 
 tasks.named('test') {
