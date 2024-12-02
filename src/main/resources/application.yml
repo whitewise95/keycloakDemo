@@ -1,0 +1,7 @@
+keycloak:
+  auth-server-url: http://localhost:8080/realms/myrealm
+  realm: myrealm
+  resource: myclient
+  credentials:
+    secret: myclientsecret
+  principal-attribute: preferred_username
