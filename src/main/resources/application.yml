@@ -3,18 +3,6 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8090/realms/myrealm
+          issuer-uri: https://lemoncare-dev.lemonhc.com/oidc/realms/partners
           jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
-          jwt-role-attribute: roles   # Set the attribute that contains roles (adjust as per Keycloak's claim setup)
-
-
-keycloak:
-  enabled: true
-  realm: myrealm
-  auth-server-url: http://localhost:8080/auth
-  ssl-required: external
-  resource: myclient
-  credentials:
-    secret: 9LV6DMb1NVwNzspeuLoK4xKRjN8xmATU
-  use-resource-role-mappings: true
-  bearer-only: true
+          jwt-role-attribute: roles

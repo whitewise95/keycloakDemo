@@ -1,5 +1,6 @@
 package whitewise.keycloakdemo.controller;
 
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -15,7 +16,7 @@ public class HomeController {
 	}
 
 	@GetMapping("/protected/premium")
-	@PreAuthorize("hasAnyRole('ADMIN')")
+	@Secured("ADMIN")
 	public String premium(@AuthenticationPrincipal Jwt jwt) {
 		return String.format("Hello, %s!", jwt.getClaimAsString("preferred_username"));
 	}
