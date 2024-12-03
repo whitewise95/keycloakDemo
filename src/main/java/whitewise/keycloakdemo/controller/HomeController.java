@@ -16,7 +16,7 @@ public class HomeController {
 	}
 
 	@GetMapping("/protected/premium")
-	@Secured("ADMIN")
+	@Secured("ROLE_USER")
 	public String premium(@AuthenticationPrincipal Jwt jwt) {
 		return String.format("Hello, %s!", jwt.getClaimAsString("preferred_username"));
 	}

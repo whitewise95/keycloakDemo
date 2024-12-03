@@ -1,8 +1,20 @@
+#spring:
+#  security:
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          issuer-uri: https://lemoncare-dev.lemonhc.com/oidc/realms/partners
+#          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
+#          jwt-role-attribute: roles
 spring:
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: https://lemoncare-dev.lemonhc.com/oidc/realms/partners
+          issuer-uri: http://localhost:8090/realms/partners
           jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
-          jwt-role-attribute: roles
+
+
+logging:
+  level:
+    org.springframework.security: DEBUG
