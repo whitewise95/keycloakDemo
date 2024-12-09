@@ -23,5 +23,4 @@ public class CustomUserLookupProviderFactory implements UserStorageProviderFacto
 	public String getId() {
 		return "custom-user-lookup-provider";
 	}
-
 }

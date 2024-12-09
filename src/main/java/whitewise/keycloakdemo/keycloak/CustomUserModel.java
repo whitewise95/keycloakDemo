@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.stream.Stream;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.GroupModel;
-import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.models.SubjectCredentialManager;
@@ -17,10 +16,11 @@ public class CustomUserModel implements UserModel {
 	private final User user;
 	private final RealmModel realm;
 
-	public CustomUserModel(User userEntity, KeycloakSession session, RealmModel realm) {
+	public CustomUserModel(User userEntity, RealmModel realm) {
 		this.user = userEntity;
 		this.realm = realm;
 	}
+
 
 	@Override
 	public String getId() {
@@ -67,8 +67,11 @@ public class CustomUserModel implements UserModel {
 	}
 
 	@Override
-	public String getFirstAttribute(String s) {
-		return "";
+	public String getFirstAttribute(String key) {
+		if ("password".equals(key)) {
+			return user.getPassword();
+		}
+		return null;
 	}
 
 	@Override

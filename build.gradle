@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.0'
     id 'io.spring.dependency-management' version '1.1.6'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'  // Shadow 플러그인 추가
 }
 
 group = 'whitewise'
@@ -11,6 +12,22 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
     }
+}
+
+bootJar {
+    from('src/main/resources/META-INF/services') {
+        into 'META-INF/services'
+    }
+}
+
+jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from 'src/main/resources' // resources 폴더에 있는 파일들을 포함
+    into 'BOOT-INF/classes' // JAR 내에서 이를 적절한 위치로 옮김
+}
+
+shadowJar {
+    mergeServiceFiles() // 서비스 파일을 병합해서 올바른 위치에 배치
 }
 
 repositories {
@@ -32,10 +49,9 @@ dependencies {
 
     //keycloak
     implementation 'org.keycloak:keycloak-spring-boot-starter:24.0.5'
-    implementation 'org.keycloak:keycloak-server-spi:24.0.5'
-//    implementation 'org.keycloak:keycloak-model-api:24.0.5'
-    implementation 'org.keycloak:keycloak-services:24.0.5'
-
+    implementation 'org.keycloak:keycloak-server-spi:26.0.6'
+    implementation 'org.keycloak:keycloak-services:26.0.6'
+    implementation 'org.keycloak:keycloak-server-spi-private:26.0.6'
 
     //jwt
     implementation 'com.auth0:java-jwt:4.4.0'
@@ -48,7 +64,6 @@ dependencies {
 
     implementation 'org.hibernate.validator:hibernate-validator:8.0.0.Final'
     implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
-
 }
 
 tasks.named('test') {

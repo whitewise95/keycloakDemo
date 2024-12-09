@@ -12,12 +12,14 @@ services:
       KC_HTTP_PORT: 8080
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+
     ports:
       - "8090:8080"
     depends_on:
       - postgres
     command:
       - "start-dev"
+      - "--verbose"
     restart: unless-stopped
 
   postgres:
