@@ -95,12 +95,18 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 
 	@Override
 	public UserModel getUserById(RealmModel realmModel, String id) {
-		String persistenceId = StorageId.externalId(id);
-		UserEntity entity = em.find(UserEntity.class, persistenceId);
-		if (entity == null) {
+		// String persistenceId = StorageId.externalId(id);
+		// UserEntity entity = em.find(UserEntity.class, persistenceId);
+		// if (entity == null) {
+		// 	return null;
+		// }
+		TypedQuery<UserEntity> query = em.createNamedQuery("getUserById", UserEntity.class);
+		query.setParameter("id", Long.valueOf(id));
+		List<UserEntity> result = query.getResultList();
+		if (result.isEmpty()) {
 			return null;
 		}
-		return new UserAdapter(session, realmModel, model, entity);
+		return new UserAdapter(session, realmModel, model, result.get(0));
 	}
 
 	@Override

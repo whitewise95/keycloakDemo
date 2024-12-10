@@ -2,16 +2,9 @@ package whitewise.keycloakdemo;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
 import org.keycloak.component.ComponentModel;
-import org.keycloak.models.ClientModel;
-import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
-import org.keycloak.models.RoleModel;
-import org.keycloak.models.SubjectCredentialManager;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.adapter.AbstractUserAdapterFederatedStorage;
 import org.slf4j.Logger;
@@ -70,6 +63,7 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	}
 
 	public String getPassword() {
+		log.info("getPassword called for entity: {}", entity.getPassword());
 		return entity.getPassword();
 	}
 

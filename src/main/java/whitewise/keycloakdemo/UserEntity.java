@@ -11,6 +11,7 @@ import jakarta.persistence.Table;
 
 @NamedQueries({
 	@NamedQuery(name = "getUserByUsername", query = "select u from CustomUserEntity u where u.username = :username"),
+	@NamedQuery(name = "getUserById", query = "select u from CustomUserEntity u where u.id = :id"),
 	@NamedQuery(name = "getUserByEmail", query = "select u from CustomUserEntity  u where u.email = :email"),
 	@NamedQuery(name = "getUserCount", query = "select count(u) from CustomUserEntity  u"),
 	@NamedQuery(name = "getAllUsers", query = "select u from CustomUserEntity  u"),
