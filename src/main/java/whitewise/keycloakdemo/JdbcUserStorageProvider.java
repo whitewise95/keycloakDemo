@@ -47,15 +47,18 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 
 	@Override
 	public boolean supportsCredentialType(String credentialType) {
+		log.info("credentialType : {}", credentialType);
 		return PasswordCredentialModel.TYPE.equals(credentialType);
 	}
 
 	@Override
 	public boolean isConfiguredFor(RealmModel realmModel, UserModel userModel, String credentialType) {
+		log.info("isConfiguredFor : {}", userModel);
 		return supportsCredentialType(credentialType) && getPassword(userModel) != null;
 	}
 
 	public String getPassword(UserModel user) {
+		log.info("getPassword : {}", user);
 		String password = null;
 		if (user instanceof CachedUserModel) {
 			password = (String) ((CachedUserModel) user).getCachedWith().get(PASSWORD_CACHE_KEY);
@@ -63,11 +66,6 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 			password = ((UserAdapter) user).getPassword();
 		}
 		return password;
-	}
-
-	@Override
-	public boolean isValid(RealmModel realmModel, UserModel userModel, CredentialInput credentialInput) {
-		return false;
 	}
 
 	@Override
@@ -87,6 +85,7 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 
 	@Override
 	public void onCache(RealmModel realmModel, CachedUserModel user, UserModel delegate) {
+		log.info("onCache : {}", user);
 		String password = ((UserAdapter) delegate).getPassword();
 		if (password != null) {
 			user.getCachedWith().put(PASSWORD_CACHE_KEY, password);
@@ -95,18 +94,15 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 
 	@Override
 	public UserModel getUserById(RealmModel realmModel, String id) {
-		// String persistenceId = StorageId.externalId(id);
-		// UserEntity entity = em.find(UserEntity.class, persistenceId);
-		// if (entity == null) {
-		// 	return null;
-		// }
-		TypedQuery<UserEntity> query = em.createNamedQuery("getUserById", UserEntity.class);
-		query.setParameter("id", Long.valueOf(id));
-		List<UserEntity> result = query.getResultList();
-		if (result.isEmpty()) {
+		log.info("id : {}", id);
+		String persistenceId = StorageId.externalId(id);
+		log.info("persistenceId : {}", persistenceId);
+		UserEntity entity = em.find(UserEntity.class, persistenceId);
+		if (entity == null) {
 			return null;
 		}
-		return new UserAdapter(session, realmModel, model, result.get(0));
+		log.info("entity : {}", entity);
+		return new UserAdapter(session, realmModel, model, entity);
 	}
 
 	@Override
@@ -180,6 +176,7 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 
 	@Override
 	public boolean removeUser(RealmModel realmModel, UserModel userModel) {
+		log.info("removeUser : {}", userModel);
 		String persistenceId = StorageId.externalId(userModel.getId());
 		UserEntity entity = em.find(UserEntity.class, persistenceId);
 		if (entity == null) {
@@ -189,62 +186,21 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 		return true;
 	}
 
-	// @Override
-	// public UserModel getUserById(RealmModel realmModel, String id) {
-	// 	User user = userRepository.findById(Long.valueOf(id)).orElseThrow(RuntimeException::new);
-	// 	return new CustomUserModel(user, realmModel);
-	// }
-	//
-	// @Override
-	// public UserModel getUserByUsername(RealmModel realmModel, String username) {
-	// 	User user = userRepository.findByUsername(username).orElseThrow(RuntimeException::new);
-	// 	return new CustomUserModel(user, realmModel);
-	// }
-	//
-	// @Override
-	// public CredentialValidationOutput getUserByCredential(RealmModel realm, CredentialInput input) {
-	// 	return UserLookupProvider.super.getUserByCredential(realm, input);
-	// }
-	//
-	// @Override
-	// public UserModel getUserByEmail(RealmModel realmModel, String email) {
-	// 	User user = userRepository.findByEmail(email).orElseThrow(RuntimeException::new);
-	// 	return new CustomUserModel(user, realmModel);
-	// }
-	//
-	// @Override
-	// public boolean supportsCredentialType(String credentialType) {
-	// 	return "password".equals(credentialType); // password만 지원
-	// }
-	//
-	// @Override
-	// public boolean isConfiguredFor(RealmModel realmModel, UserModel userModel, String credentialType) {
-	// 	CustomUserModel customUser = (CustomUserModel) userModel;
-	//
-	// 	if (!(userModel instanceof CustomUserModel)) {
-	// 		return false; // CustomUserModel이 아닌 경우 처리하지 않음
-	// 	}
-	//
-	// 	return supportsCredentialType(credentialType) && customUser.getFirstAttribute("password") != null;
-	// }
-	//
-	// @Override
-	// public boolean isValid(RealmModel realmModel, UserModel userModel, CredentialInput credentialInput) {
-	// 	if (!(userModel instanceof CustomUserModel)) {
-	// 		return false; // CustomUserModel이 아닌 경우 처리하지 않음
-	// 	}
-	//
-	// 	CustomUserModel customUser = (CustomUserModel) userModel;
-	//
-	// 	if (!supportsCredentialType(credentialInput.getType())) {
-	// 		return false; // 비밀번호 이외의 Credential은 처리하지 않음
-	// 	}
-	//
-	// 	String rawPassword = credentialInput.getChallengeResponse(); // 사용자가 입력한 비밀번호
-	// 	String storedPassword = customUser.getFirstAttribute("password"); // 저장된 비밀번호
-	// 	return rawPassword.equals(storedPassword); // 실제로는 BCrypt
-	// }
-	//
+	@Override
+	public boolean isValid(RealmModel realmModel, UserModel userModel, CredentialInput credentialInput) {
+		log.info("credentialInput : {}", credentialInput);
+		if (!(userModel instanceof UserEntity)) {
+			return false; // CustomUserModel이 아닌 경우 처리하지 않음
+		}
 
+		UserEntity customUser = (UserEntity) userModel;
 
+		if (!supportsCredentialType(credentialInput.getType())) {
+			return false; // 비밀번호 이외의 Credential은 처리하지 않음
+		}
+
+		String rawPassword = credentialInput.getChallengeResponse(); // 사용자가 입력한 비밀번호
+		String storedPassword = customUser.getPassword(); // 저장된 비밀번호
+		return rawPassword.equals(storedPassword); // 실제로는 BCrypt
+	}
 }
