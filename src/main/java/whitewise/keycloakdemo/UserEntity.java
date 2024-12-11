@@ -8,17 +8,18 @@ import jakarta.persistence.Id;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 
 @NamedQueries({
-	@NamedQuery(name = "getUserByUsername", query = "select u from CustomUserEntity u where u.username = :username"),
-	@NamedQuery(name = "getUserById", query = "select u from CustomUserEntity u where u.id = :id"),
-	@NamedQuery(name = "getUserByEmail", query = "select u from CustomUserEntity  u where u.email = :email"),
-	@NamedQuery(name = "getUserCount", query = "select count(u) from CustomUserEntity  u"),
-	@NamedQuery(name = "getAllUsers", query = "select u from CustomUserEntity  u"),
-	@NamedQuery(name = "searchForUser", query = "select u from CustomUserEntity  u where " +
+	@NamedQuery(name = "getUserByUsername", query = "select u from UserEntity u where u.username = :username"),
+	@NamedQuery(name = "getUserById", query = "select u from UserEntity u where u.id = :id"),
+	@NamedQuery(name = "getUserByEmail", query = "select u from UserEntity  u where u.email = :email"),
+	@NamedQuery(name = "getUserCount", query = "select count(u) from UserEntity  u"),
+	@NamedQuery(name = "getAllUsers", query = "select u from UserEntity  u"),
+	@NamedQuery(name = "searchForUser", query = "select u from UserEntity  u where " +
 		"( lower(u.username) like :search or u.email like :search ) order by u.username"),
 })
-@Entity(name = "CustomUserEntity")
+@Entity
 @Table(name = "users")
 public class UserEntity {
 
@@ -26,17 +27,21 @@ public class UserEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	public Long id;
 
-	@Column(nullable = false, unique = true)
 	private String username;
 
-	@Column(nullable = false, unique = true)
+	private String name;
+
 	private String email;
 
-	@Column(nullable = false)
 	private String password;
+
+	private String phone;
 
 	@Column(nullable = false)
 	private Boolean enabled;
+
+	@Column(name = "created_at")
+	private LocalDateTime createdAt;
 
 	public Long getId() {
 		return id;
@@ -76,6 +81,38 @@ public class UserEntity {
 
 	public void setEnabled(Boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getPhone() {
+		return phone;
+	}
+
+	public void setPhone(String phone) {
+		this.phone = phone;
+	}
+
+	public String getFirstName() {
+		return this.name.substring(1,this.name.length());
+	}
+
+	public String getLastName() {
+		return this.name.substring(0,1);
 	}
 }
 

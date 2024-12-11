@@ -2,8 +2,12 @@ package whitewise.keycloakdemo;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
+import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
@@ -13,6 +17,7 @@ import org.keycloak.credential.CredentialInputValidator;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.UserCredentialModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.cache.CachedUserModel;
 import org.keycloak.models.cache.OnUserCache;
@@ -34,7 +39,7 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 	OnUserCache {
 
 	public static final String PASSWORD_CACHE_KEY = UserAdapter.class.getName() + ".password";
-	private static final Logger log = LoggerFactory.getLogger(JdbcUserStorageProvider.class);
+	private static final Logger logger = LoggerFactory.getLogger(JdbcUserStorageProvider.class);
 	protected EntityManager em;
 	private final KeycloakSession session;
 	private final ComponentModel model;
@@ -46,98 +51,145 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 	}
 
 	@Override
-	public boolean supportsCredentialType(String credentialType) {
-		log.info("credentialType : {}", credentialType);
-		return PasswordCredentialModel.TYPE.equals(credentialType);
-	}
-
-	@Override
-	public boolean isConfiguredFor(RealmModel realmModel, UserModel userModel, String credentialType) {
-		log.info("isConfiguredFor : {}", userModel);
-		return supportsCredentialType(credentialType) && getPassword(userModel) != null;
-	}
-
-	public String getPassword(UserModel user) {
-		log.info("getPassword : {}", user);
-		String password = null;
-		if (user instanceof CachedUserModel) {
-			password = (String) ((CachedUserModel) user).getCachedWith().get(PASSWORD_CACHE_KEY);
-		} else if (user instanceof UserAdapter) {
-			password = ((UserAdapter) user).getPassword();
+	public UserModel getUserById(RealmModel realm, String id) {
+		logger.info("getUserById: " + id);
+		String persistenceId = StorageId.externalId(id);
+		UserEntity entity = em.find(UserEntity.class, persistenceId);
+		if (entity == null) {
+			logger.info("could not find user by id: " + id);
+			return null;
 		}
-		return password;
+		return new UserAdapter(session, realm, model, entity);
 	}
 
 	@Override
-	public boolean updateCredential(RealmModel realmModel, UserModel userModel, CredentialInput credentialInput) {
-		return false;
+	public UserModel getUserByUsername(RealmModel realm, String username) {
+		logger.info("getUserByUsername: " + username);
+		TypedQuery<UserEntity> query = em.createNamedQuery("getUserByUsername", UserEntity.class);
+		query.setParameter("username", username);
+		List<UserEntity> result = query.getResultList();
+		if (result.isEmpty()) {
+			logger.info("could not find username: " + username);
+			return null;
+		}
+
+		return new UserAdapter(session, realm, model, result.get(0));
 	}
 
 	@Override
-	public void disableCredentialType(RealmModel realmModel, UserModel userModel, String s) {
-
+	public UserModel getUserByEmail(RealmModel realm, String email) {
+		TypedQuery<UserEntity> query = em.createNamedQuery("getUserByEmail", UserEntity.class);
+		query.setParameter("email", email);
+		List<UserEntity> result = query.getResultList();
+		if (result.isEmpty()) return null;
+		return new UserAdapter(session, realm, model, result.get(0));
 	}
 
 	@Override
-	public Stream<String> getDisableableCredentialTypesStream(RealmModel realmModel, UserModel userModel) {
-		return Stream.empty();
+	public UserModel addUser(RealmModel realm, String username) {
+		UserEntity entity = new UserEntity();
+		entity.setUsername(username);
+		entity.setCreatedAt(LocalDateTime.now());
+		entity.setEnabled(true);
+		em.persist(entity);
+		logger.info("added user: " + username);
+		return new UserAdapter(session, realm, model, entity);
 	}
 
 	@Override
-	public void onCache(RealmModel realmModel, CachedUserModel user, UserModel delegate) {
-		log.info("onCache : {}", user);
-		String password = ((UserAdapter) delegate).getPassword();
+	public boolean removeUser(RealmModel realm, UserModel user) {
+		String persistenceId = StorageId.externalId(user.getId());
+		UserEntity entity = em.find(UserEntity.class, persistenceId);
+		if (entity == null) return false;
+		em.remove(entity);
+		return true;
+	}
+
+	@Override
+	public void onCache(RealmModel realm, CachedUserModel user, UserModel delegate) {
+		String password = ((UserAdapter)delegate).getPassword();
 		if (password != null) {
 			user.getCachedWith().put(PASSWORD_CACHE_KEY, password);
 		}
 	}
 
 	@Override
-	public UserModel getUserById(RealmModel realmModel, String id) {
-		log.info("id : {}", id);
-		String persistenceId = StorageId.externalId(id);
-		log.info("persistenceId : {}", persistenceId);
-		UserEntity entity = em.find(UserEntity.class, persistenceId);
-		if (entity == null) {
-			return null;
+	public boolean supportsCredentialType(String credentialType) {
+		return PasswordCredentialModel.TYPE.equals(credentialType);
+	}
+
+	@Override
+	public boolean updateCredential(RealmModel realm, UserModel user, CredentialInput input) {
+		if (!supportsCredentialType(input.getType()) || !(input instanceof UserCredentialModel)) return false;
+		UserCredentialModel cred = (UserCredentialModel)input;
+		UserAdapter adapter = getUserAdapter(user);
+		adapter.setPassword(cred.getValue());
+
+		return true;
+	}
+
+	public UserAdapter getUserAdapter(UserModel user) {
+		if (user instanceof CachedUserModel) {
+			return (UserAdapter)((CachedUserModel) user).getDelegateForUpdate();
+		} else {
+			return (UserAdapter) user;
 		}
-		log.info("entity : {}", entity);
-		return new UserAdapter(session, realmModel, model, entity);
 	}
 
 	@Override
-	public UserModel getUserByUsername(RealmModel realmModel, String username) {
-		TypedQuery<UserEntity> query = em.createNamedQuery("getUserByUsername", UserEntity.class);
-		query.setParameter("username", username);
-		List<UserEntity> result = query.getResultList();
-		if (result.isEmpty()) {
-			return null;
+	public void disableCredentialType(RealmModel realm, UserModel user, String credentialType) {
+		if (!supportsCredentialType(credentialType)) return;
+
+		getUserAdapter(user).setPassword(null);
+
+	}
+
+	@Override
+	public Stream<String> getDisableableCredentialTypesStream(RealmModel realm, UserModel user) {
+		if (getUserAdapter(user).getPassword() != null) {
+			Set<String> set = new HashSet<>();
+			set.add(PasswordCredentialModel.TYPE);
+			return set.stream();
+		} else {
+			return Stream.empty();
 		}
-
-		return new UserAdapter(session, realmModel, model, result.get(0));
 	}
 
 	@Override
-	public UserModel getUserByEmail(RealmModel realmModel, String email) {
-		TypedQuery<UserEntity> query = em.createNamedQuery("getUserByEmail", UserEntity.class);
-		query.setParameter("email", email);
-		List<UserEntity> result = query.getResultList();
-		if (result.isEmpty()) {
-			return null;
+	public boolean isConfiguredFor(RealmModel realm, UserModel user, String credentialType) {
+		return supportsCredentialType(credentialType) && getPassword(user) != null;
+	}
+
+	@Override
+	public boolean isValid(RealmModel realm, UserModel user, CredentialInput input) {
+		logger.info("isValid", "isValid");
+		if (!supportsCredentialType(input.getType()) || !(input instanceof UserCredentialModel)) return false;
+		UserCredentialModel cred = (UserCredentialModel)input;
+		String password = getPassword(user);
+		return password != null && password.equals(cred.getValue());
+	}
+
+	public String getPassword(UserModel user) {
+		String password = null;
+		if (user instanceof CachedUserModel) {
+			password = (String)((CachedUserModel)user).getCachedWith().get(PASSWORD_CACHE_KEY);
+		} else if (user instanceof UserAdapter) {
+			password = ((UserAdapter)user).getPassword();
 		}
-		return new UserAdapter(session, realmModel, model, result.get(0));
+		return password;
 	}
 
 	@Override
-	public void close() {
-
+	public int getUsersCount(RealmModel realm) {
+		Object count = em.createNamedQuery("getUserCount")
+						 .getSingleResult();
+		return ((Number)count).intValue();
 	}
 
 	@Override
-	public Stream<UserModel> searchForUserStream(RealmModel realmModel, Map<String, String> params, Integer firstResult, Integer maxResults) {
+	public Stream<UserModel> searchForUserStream(RealmModel realm, Map<String, String> params, Integer firstResult, Integer maxResults) {
 		String search = params.get(UserModel.SEARCH);
 		TypedQuery<UserEntity> query = em.createNamedQuery("searchForUser", UserEntity.class);
-		log.info("info search : {}", search);
 		String lower = search != null ? search.toLowerCase() : "";
 		query.setParameter("search", "%" + lower + "%");
 		if (firstResult != null) {
@@ -146,61 +198,20 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 		if (maxResults != null) {
 			query.setMaxResults(maxResults);
 		}
-		return query.getResultStream().map(entity -> {
-			log.info("error getResultStream : {}", entity.getId());
-			return new UserAdapter(session, realmModel, model, entity);
-		});
+		return query.getResultStream().map(entity -> new UserAdapter(session, realm, model, entity));
 	}
 
 	@Override
-	public Stream<UserModel> getGroupMembersStream(RealmModel realmModel, GroupModel groupModel, Integer integer, Integer integer1) {
+	public Stream<UserModel> getGroupMembersStream(RealmModel realm, GroupModel group, Integer firstResult, Integer maxResults) {
 		return Stream.empty();
 	}
 
 	@Override
-	public Stream<UserModel> searchForUserByUserAttributeStream(RealmModel realmModel, String s, String s1) {
+	public Stream<UserModel> searchForUserByUserAttributeStream(RealmModel realm, String attrName, String attrValue) {
 		return Stream.empty();
 	}
 
 	@Override
-	public UserModel addUser(RealmModel realmModel, String username) {
-		log.info("realmModel : {}, username : {}", realmModel, username);
-		UserEntity entity = new UserEntity();
-		entity.setUsername(username);
-		entity.setEmail("test@test");
-		entity.setPassword("1234");
-		entity.setEnabled(true);
-		em.persist(entity);
-		return new UserAdapter(session, realmModel, model, entity);
-	}
-
-	@Override
-	public boolean removeUser(RealmModel realmModel, UserModel userModel) {
-		log.info("removeUser : {}", userModel);
-		String persistenceId = StorageId.externalId(userModel.getId());
-		UserEntity entity = em.find(UserEntity.class, persistenceId);
-		if (entity == null) {
-			return false;
-		}
-		em.remove(entity);
-		return true;
-	}
-
-	@Override
-	public boolean isValid(RealmModel realmModel, UserModel userModel, CredentialInput credentialInput) {
-		log.info("credentialInput : {}", credentialInput);
-		if (!(userModel instanceof UserEntity)) {
-			return false; // CustomUserModel이 아닌 경우 처리하지 않음
-		}
-
-		UserEntity customUser = (UserEntity) userModel;
-
-		if (!supportsCredentialType(credentialInput.getType())) {
-			return false; // 비밀번호 이외의 Credential은 처리하지 않음
-		}
-
-		String rawPassword = credentialInput.getChallengeResponse(); // 사용자가 입력한 비밀번호
-		String storedPassword = customUser.getPassword(); // 저장된 비밀번호
-		return rawPassword.equals(storedPassword); // 실제로는 BCrypt
+	public void close() {
 	}
 }

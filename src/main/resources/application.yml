@@ -13,6 +13,8 @@ spring:
       ddl-auto: update
     properties:
       hibernate:
+        cache:
+          use_second_level_cache: false
         query:
           fail_on_pagination_over_collection_fetch: true #collection 을 fetch 할때 페이징 처리하게 된다면 오류
         format_sql: true
@@ -22,6 +24,11 @@ spring:
         order_updates: true
         default_batch_fetch_size: 100
         highlight_sql: true
+
+logging:
+  level:
+    org.keycloak: DEBUG
+    org.hibernate.SQL: DEBUG
 
 #keycloak:
 #  datasource:
