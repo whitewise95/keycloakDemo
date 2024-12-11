@@ -8,6 +8,7 @@
     <properties>
       <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQLDialect" />
       <property name="hibernate.connection.driver_class" value="org.postgresql.Driver" />
+<!--      <property name="hibernate.default_schema" value="keycloak" /> -->  <!--TODO 스키마 테스트 해야함-->
       <property name="hibernate.connection.url" value="jdbc:postgresql://postgres:5432/keycloak" />
       <property name="hibernate.connection.username" value="keycloak_user" />
       <property name="hibernate.connection.password" value="keycloak_password" />
