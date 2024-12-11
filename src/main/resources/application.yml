@@ -1,21 +1,3 @@
-#spring:
-#  security:
-#    oauth2:
-#      resourceserver:
-#        jwt:
-#          issuer-uri: https://lemoncare-dev.lemonhc.com/oidc/realms/partners
-#          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
-#          jwt-role-attribute: roles
-
-#spring:
-#  security:
-#    oauth2:
-#      resourceserver:
-#        jwt:
-#          issuer-uri: http://localhost:8090/realms/myrealm
-#          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
-
-
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/keycloak
@@ -40,12 +22,3 @@ spring:
         order_updates: true
         default_batch_fetch_size: 100
         highlight_sql: true
-
-keycloak:
-  auth-server-url: http://localhost:8090/realms/myrealm
-  realm: myrealm
-  resource: myclient
-  credentials:
-    secret: 9LV6DMb1NVwNzspeuLoK4xKRjN8xmATU
-  principal-attribute: preferred_username
-  bearer-only: true
