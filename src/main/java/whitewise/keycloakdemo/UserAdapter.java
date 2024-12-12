@@ -89,7 +89,8 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage  {
 			case "email" -> entity.setEmail(values.get(0));
 			case "sub" -> entity.setSub(values.get(0));
 			case "iss" -> entity.setIss(values.get(0));
-			case "emailVerified" -> entity.setEmailVerified(Boolean.valueOf(values.get(0)));
+			case "name" -> entity.setName(values.get(0));
+			case "emailverified" -> entity.setEmailVerified(Boolean.valueOf(values.get(0)));
 			default -> super.setAttribute(name, values);
 		}
 	}
