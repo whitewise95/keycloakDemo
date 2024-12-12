@@ -38,9 +38,17 @@ public class UserEntity {
 
 	private String email;
 
+	@Column(name = "email_verified")
+	private Boolean emailVerified;
+
 	private String password;
 
-	private String phone;
+	private String sub;
+
+	@Column(name = "phone_number_verified")
+	private Boolean phoneNumberVerified;
+
+	private String iss;
 
 	@Column(nullable = false)
 	private Boolean enabled;

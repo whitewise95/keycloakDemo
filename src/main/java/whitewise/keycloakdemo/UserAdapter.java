@@ -6,6 +6,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import org.keycloak.broker.oidc.mappers.AbstractJsonUserAttributeMapper;
+import org.keycloak.broker.provider.AbstractIdentityProviderMapper;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
@@ -14,7 +16,7 @@ import org.keycloak.storage.adapter.AbstractUserAdapterFederatedStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UserAdapter extends AbstractUserAdapterFederatedStorage {
+public class UserAdapter extends AbstractUserAdapterFederatedStorage  {
 
 	private static final Logger log = LoggerFactory.getLogger(AbstractUserAdapterFederatedStorage.class);
 
@@ -82,10 +84,12 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	public void setAttribute(String name, List<String> values) {
 		log.info("setAttribute name : {}, values : {}", name, values.get(0));
 		switch (name.toLowerCase()) {
-			case "phone" -> entity.setPhone(values.get(0));
 			case "firstname" -> entity.setName(entity.getLastName() + values.get(0));
 			case "lastname" -> entity.setName(values.get(0) + entity.getName());
 			case "email" -> entity.setEmail(values.get(0));
+			case "sub" -> entity.setSub(values.get(0));
+			case "iss" -> entity.setIss(values.get(0));
+			case "emailVerified" -> entity.setEmailVerified(Boolean.valueOf(values.get(0)));
 			default -> super.setAttribute(name, values);
 		}
 	}
@@ -94,7 +98,6 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	public String getFirstAttribute(String name) {
 		log.info("getFirstAttribute : {}", name);
 		return switch (name.toLowerCase()) {
-			case "phone" -> entity.getPhone();
 			case "created_timestamp" -> String.valueOf(entity.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli());
 			case "email_verified" -> entity.getEmail();
 			case "enabled" -> entity.getEnabled().toString();
@@ -114,7 +117,6 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		all.add("lastName", entity.getLastName());
 		all.add("email", entity.getEmail());
 		all.add("username", entity.getUsername());
-		all.add("phone", entity.getPhone());
 		return all;
 	}
 
@@ -129,4 +131,5 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 			return super.getAttributeStream(name);
 		}
 	}
+
 }
