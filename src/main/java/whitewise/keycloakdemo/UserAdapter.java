@@ -80,12 +80,13 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 
 	@Override
 	public void setAttribute(String name, List<String> values) {
-		for (String value : values) {
-			log.info("setAttribute value: {}", value);
-		}
-		if (name.equals("phone")) {
-		} else {
-			super.setAttribute(name, values);
+		log.info("setAttribute name : {}, values : {}", name, values.get(0));
+		switch (name.toLowerCase()) {
+			case "phone" -> entity.setPhone(values.get(0));
+			case "firstname" -> entity.setName(entity.getLastName() + values.get(0));
+			case "lastname" -> entity.setName(values.get(0) + entity.getName());
+			case "email" -> entity.setEmail(values.get(0));
+			default -> super.setAttribute(name, values);
 		}
 	}
 
