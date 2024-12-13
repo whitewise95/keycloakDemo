@@ -39,15 +39,6 @@ dependencies {
 
     // Keycloak Model JPA
     implementation 'org.keycloak:keycloak-model-jpa:26.0.6'
-
-    //loging
-    implementation 'org.jboss.logging:jboss-logging:3.6.1.Final'
-
-//    // PostgreSQL Driver
-//    implementation 'org.postgresql:postgresql:42.6.0'
-//
-//    implementation 'org.hibernate.validator:hibernate-validator:8.0.0.Final'
-//    implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
 }
 
 tasks.named('test') {

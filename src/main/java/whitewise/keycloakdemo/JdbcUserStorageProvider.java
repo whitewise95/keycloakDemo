@@ -155,11 +155,17 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 		}
 	}
 
+	/**
+	 * 인증 서포트 타입을 확인 현재는 Password 방식으로 되어 있음 ex) otp, WebAuthn 등등
+	 * */
 	@Override
 	public boolean isConfiguredFor(RealmModel realm, UserModel user, String credentialType) {
 		return supportsCredentialType(credentialType) && getPassword(user) != null;
 	}
 
+	/**
+	 * 로그인시 패스워드 valid
+	 * */
 	@Override
 	public boolean isValid(RealmModel realm, UserModel user, CredentialInput input) {
 		logger.info("isValid", "isValid");
@@ -168,6 +174,7 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 		String password = getPassword(user);
 		return password != null && password.equals(cred.getValue());
 	}
+
 
 	public String getPassword(UserModel user) {
 		String password = null;
@@ -179,6 +186,9 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 		return password;
 	}
 
+	/**
+	 * keycloak admin 콘솔에서 user 목록 조회할 때 사용
+	 * */
 	@Override
 	public int getUsersCount(RealmModel realm) {
 		Object count = em.createNamedQuery("getUserCount")
@@ -186,6 +196,9 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 		return ((Number)count).intValue();
 	}
 
+	/**
+	 * keycloak admin 콘솔에서 user 목록 조회할 때 사용
+	 * */
 	@Override
 	public Stream<UserModel> searchForUserStream(RealmModel realm, Map<String, String> params, Integer firstResult, Integer maxResults) {
 		String search = params.get(UserModel.SEARCH);
