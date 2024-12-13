@@ -30,7 +30,7 @@ public class TestController {
 	@GetMapping("/pkce")
 	public Map<String, String> pkce() throws NoSuchAlgorithmException {
 		String verifier = generateVerifier();
-		String CodeChallenge = generateCodeChallenge(verifier);
+		String CodeChallenge = generateChallengeCode(verifier);
 
 		Map<String, String> map = new HashMap<>();
 		map.put("verifier", verifier);
@@ -38,6 +38,9 @@ public class TestController {
 		return map;
 	}
 
+	/**
+	 *  Verifier 생성
+	 * */
 	private String generateVerifier() {
 		int length = 43 + new Random().nextInt(10); // Length: 43 to 53 (RFC 7636)
 		StringBuilder verifier = new StringBuilder();
@@ -50,7 +53,10 @@ public class TestController {
 		return verifier.toString();
 	}
 
-	private String generateCodeChallenge(String verifier) throws NoSuchAlgorithmException {
+	/**
+	 *  Challenge code 생성
+	 * */
+	private String generateChallengeCode(String verifier) throws NoSuchAlgorithmException {
 		MessageDigest digest = MessageDigest.getInstance("SHA-256");
 		byte[] hash = digest.digest(verifier.getBytes(StandardCharsets.US_ASCII));
 		return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
