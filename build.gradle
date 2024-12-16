@@ -24,12 +24,6 @@ dependencies {
     implementation 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
 
-    //keycloak
-    implementation 'org.keycloak:keycloak-spring-boot-starter:24.0.5'
-    implementation 'org.keycloak:keycloak-server-spi:26.0.6'
-    implementation 'org.keycloak:keycloak-services:26.0.6'
-    implementation 'org.keycloak:keycloak-server-spi-private:26.0.6'
-
     //jwt
     implementation 'com.auth0:java-jwt:4.4.0'
 
