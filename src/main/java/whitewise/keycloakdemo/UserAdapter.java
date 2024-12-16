@@ -57,24 +57,27 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		return keycloakId;
 	}
 
+	/**
+ 	 * 유저 생성시, 상세에서 수정시 호출
+	 * ENABLED, EMAIL_VERIFIED값 셋팅
+	 * */
 	@Override
 	public void setSingleAttribute(String name, String value) {
 		log.info("setSingleAttribute start name: {}, value : {}", name, value);
-		if (name.equals("phone")) {
-		} else {
-			super.setSingleAttribute(name, value);
-		}
+		super.setSingleAttribute(name, value);
 	}
+
 
 	@Override
 	public void removeAttribute(String name) {
 		log.info("removeAttribute start : {}", name);
-		if (name.equals("phone")) {
-		} else {
-			super.removeAttribute(name);
-		}
+		super.removeAttribute(name);
 	}
 
+	/**
+	 * 새로운 유저 생성 및 첫 소셜로그인시 호출됨
+	 * 유저의 속성 생성 및 상세수정
+	 */
 	@Override
 	public void setAttribute(String name, List<String> values) {
 		log.info("setAttribute name : {}, values : {}", name, values.get(0));
@@ -90,6 +93,10 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		}
 	}
 
+	/**
+	 * 유저의 속성 조회
+	 * 유저 목록조회시 상세조회시 호출
+	 */
 	@Override
 	public String getFirstAttribute(String name) {
 		log.info("getFirstAttribute : {}", name);
@@ -103,11 +110,13 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		};
 	}
 
+	/**
+	 * 관리자 사이트에서 유저 상세 조회시 호출
+	 * 유저 모든 속성 조회
+	 */
 	@Override
 	public Map<String, List<String>> getAttributes() {
 		log.info("getAttributes start");
-		// Map<String, List<String>> attrs = super.getAttributes();
-		// all.putAll(attrs);
 		MultivaluedHashMap<String, String> all = new MultivaluedHashMap<>();
 		all.add("firstName", entity.getFirstName());
 		all.add("lastName", entity.getLastName());
@@ -116,6 +125,11 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		return all;
 	}
 
+
+
+	/**
+	 * 유저 생성시 호출
+	 * */
 	@Override
 	public Stream<String> getAttributeStream(String name) {
 		log.info("getAttributeStream start name: {}", name);

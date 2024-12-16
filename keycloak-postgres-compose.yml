@@ -3,6 +3,10 @@ services:
     image: quay.io/keycloak/keycloak:26.0.6
     container_name: keycloak
     environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres1:5432/keycloak
+      KC_DB_USERNAME: keycloak_user
+      KC_DB_PASSWORD: keycloak_password
       KC_HTTP_PORT: 8080
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
@@ -13,7 +17,6 @@ services:
       - postgres2
     command:
       - "start-dev"
-      - "--verbose"
     restart: unless-stopped
     networks:
       - keycloak-network

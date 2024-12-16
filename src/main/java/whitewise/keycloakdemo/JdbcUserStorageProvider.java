@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Stream;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
@@ -64,7 +63,7 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 
 	@Override
 	public UserModel getUserByUsername(RealmModel realm, String username) {
-		logger.info("getUserByUsername: " + username);
+		logger.info("getUserByUsername start");
 		TypedQuery<UserEntity> query = em.createNamedQuery("getUserByUsername", UserEntity.class);
 		query.setParameter("username", username);
 		List<UserEntity> result = query.getResultList();
@@ -78,15 +77,22 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 
 	@Override
 	public UserModel getUserByEmail(RealmModel realm, String email) {
+		logger.info("getUserByEmail start");
 		TypedQuery<UserEntity> query = em.createNamedQuery("getUserByEmail", UserEntity.class);
 		query.setParameter("email", email);
 		List<UserEntity> result = query.getResultList();
-		if (result.isEmpty()) return null;
+		if (result.isEmpty()) {
+			return null;
+		}
 		return new UserAdapter(session, realm, model, result.get(0));
 	}
 
+	/**
+	 * 첫 소셜로그인 및 새로운 유저 생성시 호출됨
+	 */
 	@Override
 	public UserModel addUser(RealmModel realm, String username) {
+		logger.info("addUser start");
 		UserEntity entity = new UserEntity();
 		entity.setUsername(username);
 		entity.setCreatedAt(LocalDateTime.now());
@@ -96,18 +102,25 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 		return new UserAdapter(session, realm, model, entity);
 	}
 
+	/**
+	 * 유저 삭제시 호출
+	 */
 	@Override
 	public boolean removeUser(RealmModel realm, UserModel user) {
+		logger.info("removeUser start");
 		String persistenceId = StorageId.externalId(user.getId());
 		UserEntity entity = em.find(UserEntity.class, persistenceId);
-		if (entity == null) return false;
+		if (entity == null) {
+			return false;
+		}
 		em.remove(entity);
 		return true;
 	}
 
 	@Override
 	public void onCache(RealmModel realm, CachedUserModel user, UserModel delegate) {
-		String password = ((UserAdapter)delegate).getPassword();
+		logger.info("onCache start");
+		String password = ((UserAdapter) delegate).getPassword();
 		if (password != null) {
 			user.getCachedWith().put(PASSWORD_CACHE_KEY, password);
 		}
@@ -115,13 +128,20 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 
 	@Override
 	public boolean supportsCredentialType(String credentialType) {
+		logger.info("supportsCredentialType start");
 		return PasswordCredentialModel.TYPE.equals(credentialType);
 	}
 
+	/**
+	 * 유저 비밀번호 수정시 호출
+	 */
 	@Override
 	public boolean updateCredential(RealmModel realm, UserModel user, CredentialInput input) {
-		if (!supportsCredentialType(input.getType()) || !(input instanceof UserCredentialModel)) return false;
-		UserCredentialModel cred = (UserCredentialModel)input;
+		logger.info("updateCredential start");
+		if (!supportsCredentialType(input.getType()) || !(input instanceof UserCredentialModel)) {
+			return false;
+		}
+		UserCredentialModel cred = (UserCredentialModel) input;
 		UserAdapter adapter = getUserAdapter(user);
 		adapter.setPassword(cred.getValue());
 
@@ -130,22 +150,31 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 
 	public UserAdapter getUserAdapter(UserModel user) {
 		if (user instanceof CachedUserModel) {
-			return (UserAdapter)((CachedUserModel) user).getDelegateForUpdate();
+			return (UserAdapter) ((CachedUserModel) user).getDelegateForUpdate();
 		} else {
 			return (UserAdapter) user;
 		}
 	}
 
+	/**
+	 * 유저의 credential을 비활성화할 때
+	 */
 	@Override
 	public void disableCredentialType(RealmModel realm, UserModel user, String credentialType) {
-		if (!supportsCredentialType(credentialType)) return;
+		logger.info("disableCredentialType start");
+		if (!supportsCredentialType(credentialType)) {
+			return;
+		}
 
 		getUserAdapter(user).setPassword(null);
-
 	}
 
+	/**
+	 * 유저 생성시 호출
+	 */
 	@Override
 	public Stream<String> getDisableableCredentialTypesStream(RealmModel realm, UserModel user) {
+		logger.info("getDisableableCredentialTypesStream start");
 		if (getUserAdapter(user).getPassword() != null) {
 			Set<String> set = new HashSet<>();
 			set.add(PasswordCredentialModel.TYPE);
@@ -157,20 +186,23 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 
 	/**
 	 * 인증 서포트 타입을 확인 현재는 Password 방식으로 되어 있음 ex) otp, WebAuthn 등등
-	 * */
+	 */
 	@Override
 	public boolean isConfiguredFor(RealmModel realm, UserModel user, String credentialType) {
+		logger.info("isConfiguredFor start");
 		return supportsCredentialType(credentialType) && getPassword(user) != null;
 	}
 
 	/**
 	 * 로그인시 패스워드 valid
-	 * */
+	 */
 	@Override
 	public boolean isValid(RealmModel realm, UserModel user, CredentialInput input) {
 		logger.info("isValid", "isValid");
-		if (!supportsCredentialType(input.getType()) || !(input instanceof UserCredentialModel)) return false;
-		UserCredentialModel cred = (UserCredentialModel)input;
+		if (!supportsCredentialType(input.getType()) || !(input instanceof UserCredentialModel)) {
+			return false;
+		}
+		UserCredentialModel cred = (UserCredentialModel) input;
 		String password = getPassword(user);
 		return password != null && password.equals(cred.getValue());
 	}
@@ -179,28 +211,30 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 	public String getPassword(UserModel user) {
 		String password = null;
 		if (user instanceof CachedUserModel) {
-			password = (String)((CachedUserModel)user).getCachedWith().get(PASSWORD_CACHE_KEY);
+			password = (String) ((CachedUserModel) user).getCachedWith().get(PASSWORD_CACHE_KEY);
 		} else if (user instanceof UserAdapter) {
-			password = ((UserAdapter)user).getPassword();
+			password = ((UserAdapter) user).getPassword();
 		}
 		return password;
 	}
 
 	/**
 	 * keycloak admin 콘솔에서 user 목록 조회할 때 사용
-	 * */
+	 */
 	@Override
 	public int getUsersCount(RealmModel realm) {
+		logger.info("getUsersCount start");
 		Object count = em.createNamedQuery("getUserCount")
 						 .getSingleResult();
-		return ((Number)count).intValue();
+		return ((Number) count).intValue();
 	}
 
 	/**
 	 * keycloak admin 콘솔에서 user 목록 조회할 때 사용
-	 * */
+	 */
 	@Override
 	public Stream<UserModel> searchForUserStream(RealmModel realm, Map<String, String> params, Integer firstResult, Integer maxResults) {
+		logger.info("searchForUserStream start");
 		String search = params.get(UserModel.SEARCH);
 		TypedQuery<UserEntity> query = em.createNamedQuery("searchForUser", UserEntity.class);
 		String lower = search != null ? search.toLowerCase() : "";
@@ -214,17 +248,23 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 		return query.getResultStream().map(entity -> new UserAdapter(session, realm, model, entity));
 	}
 
+	/**
+	 * 그룹내 특정 유저 목록 조회
+	 */
 	@Override
 	public Stream<UserModel> getGroupMembersStream(RealmModel realm, GroupModel group, Integer firstResult, Integer maxResults) {
+		logger.info("getGroupMembersStream start");
 		return Stream.empty();
 	}
 
 	@Override
 	public Stream<UserModel> searchForUserByUserAttributeStream(RealmModel realm, String attrName, String attrValue) {
+		logger.info("searchForUserByUserAttributeStream start");
 		return Stream.empty();
 	}
 
 	@Override
 	public void close() {
+		logger.info("close start");
 	}
 }
