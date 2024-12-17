@@ -155,7 +155,7 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 				/**
 				 * keycloak에 없는 ROLE 맵핑 (RDBMS ROLE)
 				 * */
-				role = realm.addRole(roleName);
+				role = realm.addRole(roleName); //keycloak db role에 추가됨
 			}
 			roles.add(role);
 		}
