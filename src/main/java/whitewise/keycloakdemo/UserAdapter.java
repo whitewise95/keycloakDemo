@@ -2,13 +2,16 @@ package whitewise.keycloakdemo;
 
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import java.time.ZoneOffset;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.RoleModel;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.adapter.AbstractUserAdapterFederatedStorage;
 
@@ -125,8 +128,6 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		return all;
 	}
 
-
-
 	/**
 	 * 유저 생성시 호출
 	 * */
@@ -134,5 +135,51 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	public Stream<String> getAttributeStream(String name) {
 		log.info("getAttributeStream start name: {}", name);
 		return super.getAttributeStream(name);
+	}
+
+	/**
+	 * ROLE 맵핑
+	 * */
+	@Override
+	public Stream<RoleModel> getRoleMappingsStream() {
+		log.info("getRoleMappingsStream start");
+
+		Set<RoleModel> roles = new HashSet<>();
+		RealmModel realm = session.getContext().getRealm();
+
+		List<String> userRoles = List.of("ROLE_USER");
+		for (String roleName : userRoles) {
+			RoleModel role = realm.getRole(roleName);
+
+			if (role == null) {
+				/**
+				 * keycloak에 없는 ROLE 맵핑 (RDBMS ROLE)
+				 * */
+				role = realm.addRole(roleName);
+			}
+			roles.add(role);
+		}
+
+		Stream<RoleModel> rdbRole = roles.stream();
+		//endregion
+
+		/**
+		 * keycloak 해당 유저의 할당된 ROLE
+		 * */
+		Stream<RoleModel> roleModelStream = super.getRoleMappingsStream();
+
+		/**
+		 * keycloak ROLE, REDMS ROLE 합
+		 * */
+		return Stream.concat(rdbRole, roleModelStream);
+	}
+
+	@Override
+	public boolean hasRole(RoleModel role) {
+		log.info("hasRole param: {}", role);
+
+		boolean b = super.hasRole(role);
+		log.info("hasRole result: {}", b);
+		return b;
 	}
 }
