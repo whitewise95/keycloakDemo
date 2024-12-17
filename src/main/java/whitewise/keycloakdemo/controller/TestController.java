@@ -10,6 +10,7 @@ import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,8 +40,8 @@ public class TestController {
 	}
 
 	/**
-	 *  Verifier 생성
-	 * */
+	 * Verifier 생성
+	 */
 	private String generateVerifier() {
 		int length = 43 + new Random().nextInt(10); // Length: 43 to 53 (RFC 7636)
 		StringBuilder verifier = new StringBuilder();
@@ -54,8 +55,8 @@ public class TestController {
 	}
 
 	/**
-	 *  Challenge code 생성
-	 * */
+	 * Challenge code 생성
+	 */
 	private String generateChallengeCode(String verifier) throws NoSuchAlgorithmException {
 		MessageDigest digest = MessageDigest.getInstance("SHA-256");
 		byte[] hash = digest.digest(verifier.getBytes(StandardCharsets.US_ASCII));
@@ -69,9 +70,23 @@ public class TestController {
 		return new ResponseEntity<>(HttpStatus.CREATED);
 	}
 
-	@GetMapping("/")
-	public Map<String, Object> index(@RequestHeader("Authorization") String authorization) {
+	// @GetMapping("/")
+	// public Map<String, Object> index(@RequestHeader("Authorization") String authorization) {
+	// 	JwtTokenUtils jwtTokenUtils = new JwtTokenUtils();
+	// 	return jwtTokenUtils.decodeToken(authorization);
+	// }
+
+	@GetMapping("/role")
+	@Secured("ROLE_USER")
+	public Map<String, Object> test(@RequestHeader("Authorization") String authorizationHeader) {
 		JwtTokenUtils jwtTokenUtils = new JwtTokenUtils();
-		return jwtTokenUtils.decodeToken(authorization);
+		return jwtTokenUtils.decodeToken(authorizationHeader);
+	}
+
+	@GetMapping("/role2")
+	@Secured("ROLE_ADMIN")
+	public Map<String, Object> test2(@RequestHeader("Authorization") String authorizationHeader) {
+		JwtTokenUtils jwtTokenUtils = new JwtTokenUtils();
+		return jwtTokenUtils.decodeToken(authorizationHeader);
 	}
 }
