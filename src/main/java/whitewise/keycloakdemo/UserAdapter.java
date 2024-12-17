@@ -61,9 +61,9 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	}
 
 	/**
- 	 * 유저 생성시, 상세에서 수정시 호출
+	 * 유저 생성시, 상세에서 수정시 호출
 	 * ENABLED, EMAIL_VERIFIED값 셋팅
-	 * */
+	 */
 	@Override
 	public void setSingleAttribute(String name, String value) {
 		log.info("setSingleAttribute start name: {}, value : {}", name, value);
@@ -89,16 +89,14 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 			case "lastname" -> entity.setName(values.get(0) + entity.getName());
 			case "email" -> entity.setEmail(values.get(0));
 			case "sub" -> entity.setSub(values.get(0));
-			case "iss" -> entity.setIss(values.get(0));
 			case "name" -> entity.setName(values.get(0));
-			case "emailverified" -> entity.setEmailVerified(Boolean.valueOf(values.get(0)));
 			default -> super.setAttribute(name, values);
 		}
 	}
 
 	/**
 	 * 유저의 속성 조회
-	 * 유저 목록조회시 상세조회시 호출
+	 * 유저 목록조회시
 	 */
 	@Override
 	public String getFirstAttribute(String name) {
@@ -109,6 +107,7 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 			case "enabled" -> entity.getEnabled().toString();
 			case "firstname" -> entity.getFirstName();
 			case "lastname" -> entity.getLastName();
+			// case "sub" -> entity.getSub();
 			default -> super.getFirstAttribute(name);
 		};
 	}
@@ -125,12 +124,13 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		all.add("lastName", entity.getLastName());
 		all.add("email", entity.getEmail());
 		all.add("username", entity.getUsername());
+		all.add("sub", entity.getSub());
 		return all;
 	}
 
 	/**
 	 * 유저 생성시 호출
-	 * */
+	 */
 	@Override
 	public Stream<String> getAttributeStream(String name) {
 		log.info("getAttributeStream start name: {}", name);
@@ -138,8 +138,8 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	}
 
 	/**
-	 * ROLE 맵핑
-	 * */
+	 * 기존 유저 ROLE 동기화 및 맵핑
+	 */
 	@Override
 	public Stream<RoleModel> getRoleMappingsStream() {
 		log.info("getRoleMappingsStream start");
@@ -147,21 +147,20 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		Set<RoleModel> roles = new HashSet<>();
 		RealmModel realm = session.getContext().getRealm();
 
-		List<String> userRoles = List.of("ROLE_USER");
+		List<String> userRoles = List.of("ROLE_PARTNERS");
 		for (String roleName : userRoles) {
 			RoleModel role = realm.getRole(roleName);
 
 			if (role == null) {
 				/**
-				 * keycloak에 없는 ROLE 맵핑 (RDBMS ROLE)
+				 *  keycloak에 없는 ROLE 추가 (RDBMS ROLE)
 				 * */
-				role = realm.addRole(roleName); //keycloak db role에 추가됨
+				role = realm.addRole(roleName); // keycloak db role에 추가됨
 			}
 			roles.add(role);
 		}
 
 		Stream<RoleModel> rdbRole = roles.stream();
-		//endregion
 
 		/**
 		 * keycloak 해당 유저의 할당된 ROLE
@@ -169,17 +168,16 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		Stream<RoleModel> roleModelStream = super.getRoleMappingsStream();
 
 		/**
-		 * keycloak ROLE, REDMS ROLE 합
+		 * keycloak ROLE, REDMS ROLE 결합
 		 * */
 		return Stream.concat(rdbRole, roleModelStream);
 	}
 
+	/**
+	 * 유저가 특정 role을 가지고 있는지 체크
+	 */
 	@Override
 	public boolean hasRole(RoleModel role) {
-		log.info("hasRole param: {}", role);
-
-		boolean b = super.hasRole(role);
-		log.info("hasRole result: {}", b);
-		return b;
+		return super.hasRole(role);
 	}
 }

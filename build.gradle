@@ -13,13 +13,9 @@ java {
     }
 }
 
-//tasks.named('bootJar') {
-//    enabled = false
-//}
-//
-//tasks.named('jar') {
-//    enabled = true
-//}
+tasks.named('bootJar') {
+    enabled = false
+}
 
 repositories {
     mavenCentral()
