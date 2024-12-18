@@ -107,7 +107,6 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 			case "enabled" -> entity.getEnabled().toString();
 			case "firstname" -> entity.getFirstName();
 			case "lastname" -> entity.getLastName();
-			// case "sub" -> entity.getSub();
 			default -> super.getFirstAttribute(name);
 		};
 	}
