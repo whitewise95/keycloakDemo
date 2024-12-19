@@ -17,6 +17,7 @@ services:
       - postgres2
     command:
       - "start-dev"
+      - "--features=admin-fine-grained-authz,token-exchange"
     restart: unless-stopped
     networks:
       - keycloak-network

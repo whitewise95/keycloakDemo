@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.keycloak.authentication.authenticators.broker.IdpCreateUserIfUniqueAuthenticator;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.credential.CredentialInput;
@@ -21,6 +22,7 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.cache.CachedUserModel;
 import org.keycloak.models.cache.OnUserCache;
 import org.keycloak.models.credential.PasswordCredentialModel;
+import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.user.UserLookupProvider;
@@ -28,6 +30,9 @@ import org.keycloak.storage.user.UserQueryProvider;
 import org.keycloak.storage.user.UserRegistrationProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import whitewise.keycloakdemo.entity.Account;
+import whitewise.keycloakdemo.entity.AccountSocial;
+import whitewise.keycloakdemo.entity.AccountUser;
 
 public class JdbcUserStorageProvider implements UserStorageProvider,
 	UserLookupProvider,
@@ -53,20 +58,23 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 	public UserModel getUserById(RealmModel realm, String id) {
 		logger.info("getUserById: " + id);
 		String persistenceId = StorageId.externalId(id);
-		UserEntity entity = em.find(UserEntity.class, persistenceId);
-		if (entity == null) {
-			logger.info("could not find user by id: " + id);
+		logger.info("persistenceId : {}", persistenceId);
+		TypedQuery<AccountUser> query = em.createNamedQuery("getUserById", AccountUser.class);
+		query.setParameter("id", Long.valueOf(persistenceId));
+		List<AccountUser> result = query.getResultList();
+		if (result.isEmpty()) {
+			logger.info("could not find id: " + id);
 			return null;
 		}
-		return new UserAdapter(session, realm, model, entity);
+		return new UserAdapter(session, realm, model, result.get(0));
 	}
 
 	@Override
 	public UserModel getUserByUsername(RealmModel realm, String username) {
 		logger.info("getUserByUsername start");
-		TypedQuery<UserEntity> query = em.createNamedQuery("getUserByUsername", UserEntity.class);
+		TypedQuery<AccountUser> query = em.createNamedQuery("getUserByUsername", AccountUser.class);
 		query.setParameter("username", username);
-		List<UserEntity> result = query.getResultList();
+		List<AccountUser> result = query.getResultList();
 		if (result.isEmpty()) {
 			logger.info("could not find username: " + username);
 			return null;
@@ -78,9 +86,9 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 	@Override
 	public UserModel getUserByEmail(RealmModel realm, String email) {
 		logger.info("getUserByEmail start");
-		TypedQuery<UserEntity> query = em.createNamedQuery("getUserByEmail", UserEntity.class);
+		TypedQuery<AccountUser> query = em.createNamedQuery("getUserByEmail", AccountUser.class);
 		query.setParameter("email", email);
-		List<UserEntity> result = query.getResultList();
+		List<AccountUser> result = query.getResultList();
 		if (result.isEmpty()) {
 			return null;
 		}
@@ -93,23 +101,34 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 	@Override
 	public UserModel addUser(RealmModel realm, String username) {
 		logger.info("addUser start");
-		UserEntity entity = new UserEntity();
-		entity.setUsername(username);
-		entity.setCreatedAt(LocalDateTime.now());
-		entity.setEnabled(true);
-		em.persist(entity);
-		logger.info("added user: " + username);
-		return new UserAdapter(session, realm, model, entity);
+
+		Account account = new Account();
+		account.setAccountType(Account.AccountType.USER);
+		LocalDateTime now = LocalDateTime.now();
+		account.setLastLoginAt(now);
+		account.setCreatedAt(now);
+		em.persist(account);
+
+		AccountUser accountUser = new AccountUser();
+		accountUser.setAccount(account);
+		account.getAccountUserList().add(accountUser);
+
+		AccountSocial accountSocial = new AccountSocial();
+		accountSocial.setSignName(username);
+		accountSocial.setAccountUser(accountUser);
+		accountUser.getAccountSocialList().add(accountSocial);
+		return new UserAdapter(session, realm, model, accountUser, accountSocial);
 	}
 
 	/**
 	 * 유저 삭제시 호출
+	 * TODO 체크해봐야함
 	 */
 	@Override
 	public boolean removeUser(RealmModel realm, UserModel user) {
 		logger.info("removeUser start");
 		String persistenceId = StorageId.externalId(user.getId());
-		UserEntity entity = em.find(UserEntity.class, persistenceId);
+		AccountUser entity = em.find(AccountUser.class, persistenceId);
 		if (entity == null) {
 			return false;
 		}
@@ -207,7 +226,6 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 		return password != null && password.equals(cred.getValue());
 	}
 
-
 	public String getPassword(UserModel user) {
 		String password = null;
 		if (user instanceof CachedUserModel) {
@@ -236,7 +254,7 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 	public Stream<UserModel> searchForUserStream(RealmModel realm, Map<String, String> params, Integer firstResult, Integer maxResults) {
 		logger.info("searchForUserStream start");
 		String search = params.get(UserModel.SEARCH);
-		TypedQuery<UserEntity> query = em.createNamedQuery("searchForUser", UserEntity.class);
+		TypedQuery<AccountUser> query = em.createNamedQuery("searchForUser", AccountUser.class);
 		String lower = search != null ? search.toLowerCase() : "";
 		query.setParameter("search", "%" + lower + "%");
 		if (firstResult != null) {

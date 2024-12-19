@@ -1,5 +1,6 @@
 package whitewise.keycloakdemo;
 
+import jakarta.persistence.EntityManager;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import java.time.ZoneOffset;
 import java.util.HashSet;
@@ -14,17 +15,27 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.adapter.AbstractUserAdapterFederatedStorage;
+import whitewise.keycloakdemo.entity.AccountSocial;
+import whitewise.keycloakdemo.entity.AccountUser;
 
 @Slf4j
 public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 
-	protected UserEntity entity;
+	protected AccountUser entity;
 	protected String keycloakId;
+	protected AccountSocial accountSocial;
 
-	public UserAdapter(KeycloakSession session, RealmModel realm, ComponentModel model, UserEntity entity) {
+	public UserAdapter(KeycloakSession session, RealmModel realm, ComponentModel model, AccountUser entity) {
 		super(session, realm, model);
 		this.entity = entity;
-		keycloakId = StorageId.keycloakId(model, String.valueOf(entity.getId()));
+		keycloakId = StorageId.keycloakId(model, String.valueOf(entity.getAccount().getId()));
+	}
+
+	public UserAdapter(KeycloakSession session, RealmModel realm, ComponentModel model, AccountUser entity, AccountSocial accountSocial) {
+		super(session, realm, model);
+		this.entity = entity;
+		this.accountSocial = accountSocial;
+		keycloakId = StorageId.keycloakId(model, String.valueOf(entity.getAccount().getId()));
 	}
 
 	public String getPassword() {
@@ -37,12 +48,13 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 
 	@Override
 	public String getUsername() {
-		return entity.getUsername();
+		log.info("entity.getSignName(); : {}", entity.getSignName());
+		return entity.getSignName();
 	}
 
 	@Override
 	public void setUsername(String username) {
-		entity.setUsername(username);
+		entity.setSignName(username);
 	}
 
 	@Override
@@ -52,6 +64,7 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 
 	@Override
 	public String getEmail() {
+		log.info("entity.getEmail(); : {}", entity.getEmail());
 		return entity.getEmail();
 	}
 
@@ -85,11 +98,13 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	public void setAttribute(String name, List<String> values) {
 		log.info("setAttribute name : {}, values : {}", name, values.get(0));
 		switch (name.toLowerCase()) {
-			case "firstname" -> entity.setName(entity.getLastName() + values.get(0));
-			case "lastname" -> entity.setName(values.get(0) + entity.getName());
 			case "email" -> entity.setEmail(values.get(0));
-			case "sub" -> entity.setSub(values.get(0));
 			case "name" -> entity.setName(values.get(0));
+			case "sub" -> entity.setSignName(values.get(0));
+			case "identityprovider" -> {
+				accountSocial.setId(new AccountSocial.PK(entity.getAccount().getId(), entity.getAccountSocialType(values.get(0))));
+				entity.getAccountSocialList().add(accountSocial);
+			}
 			default -> super.setAttribute(name, values);
 		}
 	}
@@ -102,11 +117,13 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	public String getFirstAttribute(String name) {
 		log.info("getFirstAttribute : {}", name);
 		return switch (name.toLowerCase()) {
-			case "created_timestamp" -> String.valueOf(entity.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli());
-			case "email_verified" -> entity.getEmail();
-			case "enabled" -> entity.getEnabled().toString();
-			case "firstname" -> entity.getFirstName();
-			case "lastname" -> entity.getLastName();
+			case "created_timestamp" -> String.valueOf(entity.getAccount().getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli());
+			case "email_verified" -> "true";
+			case "enabled" -> "true";
+			case "first_name" -> entity.getName();
+			case "last_name" -> entity.getName();
+			case "identityprovider" -> "1";
+			case "email" -> entity.getEmail(); // 이메일 반환
 			default -> super.getFirstAttribute(name);
 		};
 	}
@@ -119,11 +136,12 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 	public Map<String, List<String>> getAttributes() {
 		log.info("getAttributes start");
 		MultivaluedHashMap<String, String> all = new MultivaluedHashMap<>();
-		all.add("firstName", entity.getFirstName());
-		all.add("lastName", entity.getLastName());
+		all.add("firstName", entity.getName());
+		all.add("lastName", entity.getName());
 		all.add("email", entity.getEmail());
-		all.add("username", entity.getUsername());
-		all.add("sub", entity.getSub());
+		all.add("identityprovider", "1");
+		all.add("username", entity.getSignName());
+		// all.add("sub", entity.getSub());
 		return all;
 	}
 
@@ -146,7 +164,7 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		Set<RoleModel> roles = new HashSet<>();
 		RealmModel realm = session.getContext().getRealm();
 
-		List<String> userRoles = List.of("ROLE_PARTNERS");
+		List<String> userRoles = List.of("ROLE_USER");
 		for (String roleName : userRoles) {
 			RoleModel role = realm.getRole(roleName);
 

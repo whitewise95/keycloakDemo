@@ -4,7 +4,9 @@
   xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"
   version="3.0">
   <persistence-unit name="user-store" transaction-type="JTA">
-    <class>whitewise.keycloakdemo.UserEntity</class>
+    <class>whitewise.keycloakdemo.entity.AccountUser</class>
+    <class>whitewise.keycloakdemo.entity.Account</class>
+    <class>whitewise.keycloakdemo.entity.AccountSocial</class>
     <properties>
       <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQLDialect"/>
       <property name="hibernate.connection.driver_class" value="org.postgresql.Driver"/>
