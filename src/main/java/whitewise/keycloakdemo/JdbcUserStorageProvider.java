@@ -111,6 +111,7 @@ public class JdbcUserStorageProvider implements UserStorageProvider,
 
 		AccountUser accountUser = new AccountUser();
 		accountUser.setAccount(account);
+		accountUser.setName("");
 		account.getAccountUserList().add(accountUser);
 
 		AccountSocial accountSocial = new AccountSocial();
