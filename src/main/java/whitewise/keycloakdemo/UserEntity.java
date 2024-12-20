@@ -45,10 +45,6 @@ public class UserEntity {
 
 	private String password;
 
-	private String sub;
-
-	private String test;
-
 	private Boolean enabled;
 
 	@Column(name = "created_at")

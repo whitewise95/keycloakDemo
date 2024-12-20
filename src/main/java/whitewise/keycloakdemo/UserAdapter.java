@@ -88,7 +88,6 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 			case "firstname" -> entity.setName(entity.getLastName() + values.get(0));
 			case "lastname" -> entity.setName(values.get(0) + entity.getName());
 			case "email" -> entity.setEmail(values.get(0));
-			case "sub" -> entity.setSub(values.get(0));
 			case "name" -> entity.setName(values.get(0));
 			default -> super.setAttribute(name, values);
 		}
@@ -123,7 +122,6 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
 		all.add("lastName", entity.getLastName());
 		all.add("email", entity.getEmail());
 		all.add("username", entity.getUsername());
-		all.add("sub", entity.getSub());
 		return all;
 	}
 
